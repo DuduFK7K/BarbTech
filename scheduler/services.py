@@ -50,16 +50,11 @@ class AppointmentService:
             profissional=profissional,
             status__in=[Agendamento.StatusChoices.PENDENTE, Agendamento.StatusChoices.ACEITO],
             data_hora__lt=data_hora_fim,
-            # precisamos que agendamento tenha `data_hora_fim` no banco ou calcular na query (mais dificil).
-            # Para simplificar, consideramos que o conflito ocorre validando se a data_hora e duraçao batem, mas o Agendamento guardou só data_hora inicial.
-            # Ideal seria o Agendamento ter data_hora_fim tb, mas como já geramos, vamos buscar tudo do dia e validar em memória se necessário.
-            data_hora__date=data_hora.date()
-        )
-        
-        for agendamento in conflito_agendamentos:
-            fim_agendamento = agendamento.data_hora + datetime.timedelta(minutes=agendamento.servico.duracao_min)
-            if agendamento.data_hora < data_hora_fim and fim_agendamento > data_hora:
-                raise ValidationError("O profissional já possui um agendamento neste horário.")
+            data_hora_fim__gt=data_hora
+        ).exists()
+
+        if conflito_agendamentos:
+            raise ValidationError("O profissional já possui um agendamento neste horário.")
 
         return True
 

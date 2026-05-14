@@ -23,7 +23,13 @@ class UserSerializer(serializers.ModelSerializer):
 class ServicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Servico
-        fields = '__all__'
+        fields = ['id', 'estabelecimento', 'profissional', 'nome', 'descricao', 'duracao_min', 'preco', 'ativo']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        if not attrs.get('estabelecimento') and not attrs.get('profissional'):
+            raise serializers.ValidationError("O serviço deve estar vinculado a um estabelecimento ou a um profissional.")
+        return attrs
 
 class EstabelecimentoSerializer(serializers.ModelSerializer):
     servicos = ServicoSerializer(many=True, read_only=True)
@@ -42,7 +48,12 @@ class ProfissionalSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = Profissional
-        fields = '__all__'
+        fields = [
+            'id', 'user', 'estabelecimento', 'servicos', 'cargo', 'is_vip', 
+            'atende_domicilio', 'raio_km', 'score', 'total_avaliacoes', 
+            'cnpj', 'foto_perfil', 'foto_banner'
+        ]
+        read_only_fields = ['id', 'score', 'total_avaliacoes']
         
 class ConviteSerializer(serializers.ModelSerializer):
     class Meta:

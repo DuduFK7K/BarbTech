@@ -4,6 +4,7 @@ from django.conf import settings
 from core.models import Profissional, Servico
 from accounts.models import Endereco
 from core.base_models import BaseModel
+import datetime
 
 User = settings.AUTH_USER_MODEL
 
@@ -46,11 +47,17 @@ class Agendamento(BaseModel):
     tipo_atendimento = models.CharField(max_length=20, choices=TipoAtendimentoChoices.choices, default=TipoAtendimentoChoices.LOCAL)
     endereco = models.ForeignKey(Endereco, on_delete=models.SET_NULL, null=True, blank=True)
     data_hora = models.DateTimeField()
+    data_hora_fim = models.DateTimeField(null=True, blank=True)
     valor = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         db_table = 'agendamentos'
         unique_together = ('profissional', 'data_hora')
+
+    def save(self, *args, **kwargs):
+        if self.data_hora and hasattr(self, 'servico') and self.servico:
+            self.data_hora_fim = self.data_hora + datetime.timedelta(minutes=self.servico.duracao_min)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Agendamento {self.id} - {self.status}"

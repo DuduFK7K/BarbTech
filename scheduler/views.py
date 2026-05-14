@@ -11,6 +11,13 @@ class AgendamentoViewSet(viewsets.ModelViewSet):
     serializer_class = AgendamentoSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        profissional_id = self.request.query_params.get('profissional')
+        if profissional_id:
+            queryset = queryset.filter(profissional_id=profissional_id)
+        return queryset
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
@@ -33,6 +40,50 @@ class DisponibilidadeViewSet(viewsets.ModelViewSet):
     queryset = Disponibilidade.objects.all()
     serializer_class = DisponibilidadeSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'], url_path='bulk-update')
+    def bulk_update(self, request):
+        """
+        Recebe um array de dias da semana e horários para atualizar a agenda do profissional.
+        """
+        try:
+            profissional = request.user.profissional_profile
+        except Exception:
+            return Response({"detail": "Apenas profissionais podem editar sua agenda."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # O frontend envia algo como: [{nome: 'Segunda', inicio: '09:00', fim: '18:00', fechado: false}, ...]
+        agenda_data = request.data
+        if not isinstance(agenda_data, list):
+            return Response({"detail": "Dados devem ser uma lista."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mapeamento de nome do dia para o índice do banco (opcional, ou podemos usar o dia_semana direto)
+        dias_map = {
+            'Segunda': 1, 'Terça': 2, 'Quarta': 3, 'Quinta': 4, 'Sexta': 5, 'Sábado': 6, 'Domingo': 0
+        }
+
+        # Limpa agenda anterior
+        Disponibilidade.objects.filter(profissional=profissional).delete()
+
+        novas_disponibilidades = []
+        for item in agenda_data:
+            if item.get('fechado'):
+                continue
+            
+            dia_nome = item.get('nome')
+            dia_idx = dias_map.get(dia_nome, item.get('dia_semana'))
+            
+            if dia_idx is None:
+                continue
+
+            novas_disponibilidades.append(Disponibilidade(
+                profissional=profissional,
+                dia_semana=dia_idx,
+                hora_inicio=item.get('inicio'),
+                hora_fim=item.get('fim')
+            ))
+        
+        Disponibilidade.objects.bulk_create(novas_disponibilidades)
+        return Response({"detail": "Agenda atualizada com sucesso."}, status=status.HTTP_200_OK)
 
 class BloqueioViewSet(viewsets.ModelViewSet):
     queryset = Bloqueio.objects.all()

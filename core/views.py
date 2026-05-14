@@ -45,10 +45,46 @@ class ProfissionalViewSet(viewsets.ModelViewSet):
     search_fields = ['user__nome']
     ordering_fields = ['score']
 
+    @action(detail=False, methods=['get', 'patch'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        try:
+            profissional = request.user.profissional_profile
+        except Profissional.DoesNotExist:
+            return Response({"detail": "Usuário não é um profissional."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if request.method == 'GET':
+            serializer = self.get_serializer(profissional)
+            return Response(serializer.data)
+        
+        serializer = self.get_serializer(profissional, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
 class ServicoViewSet(viewsets.ModelViewSet):
     queryset = Servico.objects.all()
     serializer_class = ServicoSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        profissional_id = self.request.query_params.get('profissional')
+        estabelecimento_id = self.request.query_params.get('estabelecimento')
+        
+        if profissional_id:
+            queryset = queryset.filter(profissional_id=profissional_id)
+        if estabelecimento_id:
+            queryset = queryset.filter(estabelecimento_id=estabelecimento_id)
+            
+        return queryset
+
+    def perform_create(self, serializer):
+        # Se for um profissional criando seu próprio serviço
+        try:
+            profissional = self.request.user.profissional_profile
+            serializer.save(profissional=profissional)
+        except Exception:
+            serializer.save()
 
 class ConviteViewSet(viewsets.ModelViewSet):
     queryset = Convite.objects.all()

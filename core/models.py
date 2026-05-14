@@ -19,7 +19,8 @@ class Estabelecimento(BaseModel):
 
 class Servico(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    estabelecimento = models.ForeignKey(Estabelecimento, on_delete=models.CASCADE, related_name='servicos')
+    estabelecimento = models.ForeignKey(Estabelecimento, on_delete=models.CASCADE, related_name='servicos', null=True, blank=True)
+    profissional = models.ForeignKey('Profissional', on_delete=models.CASCADE, related_name='servicos_proprios', null=True, blank=True)
     nome = models.CharField(max_length=255)
     descricao = models.TextField(blank=True, null=True)
     duracao_min = models.IntegerField()
@@ -30,7 +31,8 @@ class Servico(BaseModel):
         db_table = 'servicos'
 
     def __str__(self):
-        return f"{self.nome} - {self.estabelecimento.nome}"
+        owner = self.estabelecimento.nome if self.estabelecimento else (self.profissional.user.nome if self.profissional else 'Sem dono')
+        return f"{self.nome} - {owner}"
 
 class Profissional(BaseModel):
     class CargoChoices(models.TextChoices):
@@ -47,6 +49,9 @@ class Profissional(BaseModel):
     raio_km = models.IntegerField(default=0)
     score = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     total_avaliacoes = models.IntegerField(default=0)
+    cnpj = models.CharField(max_length=18, blank=True, null=True)
+    foto_perfil = models.ImageField(upload_to='profissionais/perfil/', null=True, blank=True)
+    foto_banner = models.ImageField(upload_to='profissionais/banner/', null=True, blank=True)
 
     class Meta:
         db_table = 'profissionais'

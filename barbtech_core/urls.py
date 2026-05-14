@@ -11,6 +11,7 @@ from scheduler.views import (
     AgendamentoViewSet, DisponibilidadeViewSet, BloqueioViewSet
 )
 from interactions.views import AvaliacaoViewSet, NotificacaoViewSet
+from accounts.views import ClienteRegistrationView, ProfissionalRegistrationView
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -24,9 +25,17 @@ router.register(r'bloqueios', BloqueioViewSet)
 router.register(r'avaliacoes', AvaliacaoViewSet)
 router.register(r'notificacoes', NotificacaoViewSet)
 
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/register/cliente/', ClienteRegistrationView.as_view(), name='register_cliente'),
+    path('api/register/profissional/', ProfissionalRegistrationView.as_view(), name='register_profissional'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

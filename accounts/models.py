@@ -15,6 +15,7 @@ class Endereco(BaseModel):
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     cliente = models.ForeignKey('accounts.User', on_delete=models.CASCADE, null=True, blank=True, related_name='enderecos')
     estabelecimento = models.ForeignKey('core.Estabelecimento', on_delete=models.CASCADE, null=True, blank=True, related_name='enderecos')
+    profissional = models.ForeignKey('core.Profissional', on_delete=models.CASCADE, null=True, blank=True, related_name='enderecos')
 
     class Meta:
         db_table = 'enderecos'
@@ -47,3 +48,14 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+class Cliente(BaseModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cliente_profile')
+    condicoes_especiais = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'clientes'
+
+    def __str__(self):
+        return str(self.user)
