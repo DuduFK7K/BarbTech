@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from .models import Agendamento, Disponibilidade, Bloqueio
 from .serializers import AgendamentoSerializer, DisponibilidadeSerializer, BloqueioSerializer
 from .services import AppointmentService
@@ -13,9 +14,24 @@ class AgendamentoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        profissional_id = self.request.query_params.get('profissional')
-        if profissional_id:
-            queryset = queryset.filter(profissional_id=profissional_id)
+        if not self.request.user.is_authenticated:
+            return queryset.none()
+        
+        if self.request.user.is_superuser:
+            profissional_id = self.request.query_params.get('profissional')
+            if profissional_id:
+                queryset = queryset.filter(profissional_id=profissional_id)
+            return queryset
+            
+        if self.request.user.tipo == 'PROFISSIONAL':
+            try:
+                profile = self.request.user.profissional_profile
+                queryset = queryset.filter(profissional=profile)
+            except Exception:
+                return queryset.none()
+        else: # CLIENTE
+            queryset = queryset.filter(cliente=self.request.user)
+            
         return queryset
 
     def create(self, request, *args, **kwargs):
@@ -40,6 +56,7 @@ class DisponibilidadeViewSet(viewsets.ModelViewSet):
     queryset = Disponibilidade.objects.all()
     serializer_class = DisponibilidadeSerializer
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['profissional']
 
     @action(detail=False, methods=['post'], url_path='bulk-update')
     def bulk_update(self, request):

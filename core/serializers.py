@@ -27,7 +27,11 @@ class ServicoSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate(self, attrs):
-        if not attrs.get('estabelecimento') and not attrs.get('profissional'):
+        # Se for uma criação e o usuário for um profissional autenticado, assume que será vinculado a ele
+        request = self.context.get('request')
+        is_profissional = request and request.user.is_authenticated and hasattr(request.user, 'profissional_profile')
+        
+        if not attrs.get('estabelecimento') and not attrs.get('profissional') and not is_profissional:
             raise serializers.ValidationError("O serviço deve estar vinculado a um estabelecimento ou a um profissional.")
         return attrs
 
@@ -44,12 +48,13 @@ class ProfissionalSerializer(serializers.ModelSerializer):
         queryset=Servico.objects.all(),
         many=True,
         write_only=True,
-        source='servicos'
+        source='servicos',
+        required=False
     )
     class Meta:
         model = Profissional
         fields = [
-            'id', 'user', 'estabelecimento', 'servicos', 'cargo', 'is_vip', 
+            'id', 'user', 'estabelecimento', 'servicos', 'servico_ids', 'cargo', 'is_vip', 
             'atende_domicilio', 'raio_km', 'score', 'total_avaliacoes', 
             'cnpj', 'foto_perfil', 'foto_banner'
         ]

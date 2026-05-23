@@ -90,12 +90,12 @@ WSGI_APPLICATION = 'barbtech_core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'barbtech',
-        'USER': 'postgres',
+        'USER': 'admin',
         'PASSWORD': 'password',
         'HOST': 'localhost',
-        'PORT': '5432',
+        'PORT': '3306',
     }
 }
 

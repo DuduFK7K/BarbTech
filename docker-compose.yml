@@ -2,17 +2,18 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15-alpine
+    image: mysql:8.0
     container_name: barbtech_db
     restart: always
     environment:
-      POSTGRES_DB: barbtech
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      MYSQL_DATABASE: barbtech
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
 
 volumes:
-  postgres_data:
+  mysql_data:
